@@ -1358,10 +1358,12 @@ function (dojo, declare) {
             dojo.stopEvent(evt);
 
             if (this.checkAction('pass')) {
-                this.ajaxcall('/burglebros/burglebros/pass.html', { lock: true }, this, function() {
-                    console.log(arguments);
-                    // location.reload();
-                }, console.error);
+                this.confirmationDialog( _('Are you sure you want to pass? This action may trigger an event'), dojo.hitch( this, function() {
+                    this.ajaxcall('/burglebros/burglebros/pass.html', { lock: true }, this, function() {
+                        console.log(arguments);
+                        // location.reload();
+                    }, console.error);
+                } ) ); 
             }
         },
 
