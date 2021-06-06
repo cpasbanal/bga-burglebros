@@ -946,6 +946,7 @@ SQL;
 
     function handleGuardSeesPlayerTile($tile) {
         $this->deductTileStealth($tile['id'], 'guard');
+        $guard_floor = $tile['location'][5];
 
         $player_tokens = $this->tokens->getCardsOfTypeInLocation('player', null, 'tile');
         foreach ($player_tokens as $token_id => $player_token) {
@@ -958,7 +959,10 @@ SQL;
             }
 
             // TODO: Double check Atrium won't deduct twice if guard is also there
-            if ($tile['location_arg'] == $player_tile['location_arg'] && $player_tile['type'] == 'atrium') {
+            // Deduct stealth if player is on Atrium the floor below or above
+            $player_floor = $player_tile['location'][5];
+            if ($tile['location_arg'] == $player_tile['location_arg'] && $player_tile['type'] == 'atrium' 
+                && abs($player_floor - $guard_floor) == 1) {
                 $this->deductTileStealth($player_tile['id'], 'guard');
             }
         }
