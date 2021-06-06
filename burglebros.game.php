@@ -2282,7 +2282,7 @@ SQL;
             }
             self::notifyAllPlayers('message', clienttranslate('Crystal Ball: ${player_name} changed order of upcoming events to ${card_names_displayed}'), [
                 'player_name' => self::getCurrentPlayerName(),
-                'card_names_displayed' => implode(', ', $card_names_displayed),
+                'card_names_displayed' => implode(', ', array_reverse($card_names_displayed)),
             ]);
         } elseif ($type == 'stethoscope') {
             [$old_value, $new_value] = $selected_id;
