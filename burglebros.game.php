@@ -2754,10 +2754,10 @@ SQL;
     /* DEBUG */
     public function loadDebug() {
         // Id of the first player in BGA Studio
-        $sid = 2318199;
+        $sid = 2318199; // cpasbanal0 studio player id
 
         // Check if this id exists in current player's table, else use these to replace
-        $players = self::loadPlayersBasicInfos();
+        $players = self::getCollectionFromDb( "SELECT player_id id FROM player" );
         if ( !in_array($sid, array_keys($players)) ) {
             $ids = array_keys($players);
         } else {
