@@ -708,8 +708,9 @@ SQL;
             $current_player_id = self::getCurrentPlayerId();
             $painting = $this->getPlayerLoot('painting', $current_player_id);
             $secret_door = $same_floor && $adjacent && $tile['type'] == 'secret-door';
+            // Check $tile and $other_tile are different to avoid counting a move when clicking on service_duct
+            $service_duct = $tile['type'] == 'service-duct' && $other_tile['type'] == 'service-duct' && $tile['id'] != $other_tile['id'];
             // TODO: This allows you to guess and reveal the other
-            $service_duct = $tile['type'] == 'service-duct' && $other_tile['type'] == 'service-duct';
             if ($painting && (($secret_door && $blocked) || $service_duct)) {
                 throw new BgaUserException(self::_('Cannot move this way while holding the Painting'));
             }
