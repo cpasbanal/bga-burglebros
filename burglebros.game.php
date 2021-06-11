@@ -339,7 +339,7 @@ class burglebros extends Table
         $entrance = $this->tiles->getCard($tile_id);
         $floor = $entrance['location'][5];
         if ($floor != 1) {
-            throw new BgaException(self::_("Starting tile must be on the first floor"));
+            throw new BgaUserException(self::_("Starting tile must be on the first floor"));
         }
         $this->performPeek($entrance['id'], 'effect');
 
