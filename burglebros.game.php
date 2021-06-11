@@ -2010,6 +2010,8 @@ SQL;
             foreach ($players as $player_id => $player) {
                 $player_token = $this->getPlayerToken($player_id);
                 $player_tile = $this->getPlayerTile($player_id, $player_token);
+                if ($player_tile['location'][5] != $floor)
+                    continue;
                 $path = $this->findShortestPathClockwise($floor, $guard_tile['location_arg'], $player_tile['location_arg']);
                 $paths[] = $path;
                 $shortest_path_length = min($shortest_path_length, count($path));
@@ -2018,10 +2020,12 @@ SQL;
             $paths = array_filter($paths, function($path) use($shortest_path_length) { 
                 return count($path) == $shortest_path_length;
             });
+            // If more than 1 player at the same distance, let player choose
             if (count($paths) == 1) {
+                $path = reset($paths);
                 // If Guard and player are on the same tile, do not move
-                if (count($paths[0]) > 1) {
-                    $tile_id = $paths[0][1];
+                if (count($path) > 1) {
+                    $tile_id = $path[1];
                     $this->performGuardMovementEffects($guard_token, $tile_id);
                     $patrol_token = array_values($this->tokens->getCardsOfType('patrol', $floor))[0];
                     if ($tile_id == $patrol_token['location_arg'])
@@ -3343,6 +3347,8 @@ SQL;
         if ($actions_remaining >= $trigger_action_count) {
             $count = $this->cards->countCardInLocation('events_discard');
             $event_card = $this->cards->pickCardForLocation('events_deck', 'events_discard', $count + 1);
+            $type_arg = $this->getCardTypeForName(3, 'squeak');
+            $event_card = array_values($this->cards->getCardsOfType(3, $type_arg))[0];
             self::incStat(1, 'event_cards');
             if ($event_card) {
                 $type = $this->getCardType($event_card);
