@@ -1335,6 +1335,10 @@ SQL;
                     ));
                 }
             }
+            // Show back current cracked safe floor (because patrolDieIncreased will show the 1st floor)
+            self::notifyAllPlayers('showFloor', '', [
+                'floor' => $safe_tile['location'][5]
+            ]);
         }
     }
 
