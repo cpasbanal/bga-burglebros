@@ -1356,18 +1356,23 @@ function (dojo, declare) {
 
         handlePassClick: function(evt) {
             dojo.stopEvent(evt);
-
             if (this.checkAction('pass')) {
-                this.confirmationDialog( _('Are you sure you want to pass? This action may trigger an event'), dojo.hitch( this, function() {
+                if (this.actionsRemaining() >= 2) {
+                    this.confirmationDialog( _('Are you sure you want to pass? This action may trigger an event'), dojo.hitch( this, function() {
+                        this.ajaxcall('/burglebros/burglebros/pass.html', { lock: true }, this, function() {
+                            console.log(arguments);
+                        }, console.error);
+                    } ) );
+                } else {
                     this.ajaxcall('/burglebros/burglebros/pass.html', { lock: true }, this, function() {
                         console.log(arguments);
-                        // location.reload();
                     }, console.error);
-                } ) ); 
+                } 
             }
         },
 
         handleCardSelected: function(control_name, card_id) {
+            console.log("handleCardSelected", control_name, card_id);
             if (this.myHand.isSelected(card_id) && this.checkAction('playCard')) {
                 this.ajaxcall('/burglebros/burglebros/playCard.html', { lock: true, id: card_id }, this, console.log, console.error);
             } else if (!this.myHand.isSelected(card_id)) {
