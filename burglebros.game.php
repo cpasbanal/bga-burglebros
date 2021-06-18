@@ -2767,6 +2767,35 @@ SQL;
     }
 
     /* DEBUG */
+    function flipTilesDebug($floor = null, $location_arg = null) {
+        // Can flip tiles 1 at a time or (withou arguments) all the tiles of the game
+        if ($floor) {
+            $this->flipTile($floor, $location_arg);
+        } else {
+            $tiles = self::getCollectionFromDB("SELECT card_id id, card_type type, card_location location, card_location_arg location_arg FROM tile WHERE flipped=0");
+            foreach ($tiles as $id => $tile) {
+                $this->flipTile($tile['location'][5], $tile['location_arg']);
+            }
+        }
+    }
+
+    function switchTilesDebug($floor_1, $location_arg_1, $floor_2, $location_arg_2) {
+        // Can switch two tiles of the game switchTilesDebug(1,0,1,1)
+        $tile_id_1 = $this->findTileOnFloor($floor_1, $location_arg_1)['id'];
+        $tile_id_2 = $this->findTileOnFloor($floor_2, $location_arg_2)['id'];
+        self::DbQuery("UPDATE tile SET card_location='floor$floor_2', card_location_arg=$location_arg_2 WHERE card_id=$tile_id_1" );
+        self::DbQuery("UPDATE tile SET card_location='floor$floor_1', card_location_arg=$location_arg_1 WHERE card_id=$tile_id_2" );
+
+        self::notifyAllPlayers('tileFlipped', '', array(
+            'tile' => $this->findTileOnFloor($floor_1, $location_arg_1),
+            'floor' => $floor_1
+        ));
+        self::notifyAllPlayers('tileFlipped', '', array(
+            'tile' => $this->findTileOnFloor($floor_2, $location_arg_2),
+            'floor' => $floor_2
+        ));
+    }
+
     public function loadDebug() {
         // Id of the first player in BGA Studio
         $sid = 2318199; // cpasbanal0 studio player id
