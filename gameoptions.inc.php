@@ -72,6 +72,26 @@ $game_options = array(
                     //  nobeginner=true  =>  this option is not recommended for beginners
                     // 3 => array( 'name' => totranslate('option 3'), 'description' => totranslate('this option does X'), 'beta' => true, 'nobeginner' => true )
                 )
+    ),
+
+    101 => array(
+        'name' => totranslate('Level'),    
+        'values' => array(
+                    1 => array(
+                        'name' => totranslate('Easy'),
+                        'description' => totranslate('Each player starts with 6 stealth tokens')
+                    ),
+                    2 => array(
+                        'name' => totranslate('Normal'),
+                        'description' => totranslate('Each player starts with 3 stealth tokens')
+                    ),
+                    3 => array(
+                        'name' => totranslate('Hard'),
+                        'description' => totranslate('Each player starts with 1 stealth token')
+                    ),
+
+                ),
+        'default' => 2,
     )
 );
 

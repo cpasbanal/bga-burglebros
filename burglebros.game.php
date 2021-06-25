@@ -62,7 +62,8 @@ class burglebros extends Table
             'dropLoot' => 35,
 
             // Options
-            'characterAssignment' => 100
+            'characterAssignment' => 100,
+            'level' => 101
         ) ); 
 
         $this->cards = self::getNew( "module.common.deck" );
@@ -151,6 +152,18 @@ class burglebros extends Table
         self::initStat( "player", "special_ability_use", 0 );
 
         $option_characters_advanced = $options[100] == 2;
+        $option_level = $options[101];
+        switch ($option_level) {
+            case 1:
+                $option_stealth_count = 6;
+                break;
+            case 3:
+                $option_stealth_count = 1;
+                break;
+            default:
+                $option_stealth_count = 3;
+                break;
+        }
         $this->createDecks($this->card_types, $this->card_info, $option_characters_advanced);
         $this->createDecks($this->patrol_types, $this->patrol_info);
         
@@ -219,7 +232,7 @@ class burglebros extends Table
                 $this->cards->moveCard($dynamite['id'], 'hand', $player_id);
             }
 
-            $this->pickTokens('stealth', 'player', $player_id, 3);
+            $this->pickTokens('stealth', 'player', $player_id, $option_stealth_count);
         }
 
         // Activate first player (which is in general a good idea :) )
