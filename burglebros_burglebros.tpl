@@ -68,6 +68,7 @@
                 <!-- BEGIN floor_preview -->
                 <div class="floor_preview whiteblock" id="floor{FLOOR}_preview">
                     <div class="floor_preview_number whiteblock">{FLOOR}</div>
+                    <div class="floor_path_preview" id="floor{FLOOR}_path_preview" ></div>
                 </div>
                 <!-- END floor_preview -->
             </div>
@@ -139,7 +140,7 @@ var jstpl_wall = '<div id="wall_${wall_id}" class="wall ${wall_direction}" style
 
 var jstpl_meeple = '<div id="meeple_${meeple_id}" class="meeple" style="background-color: #${player_color}; background-image: url(${meeple_background}); background-position: ${meeple_bg_pos};"></div>';
 
-var jstpl_guard_token = '<div id="guard_token_${token_id}" class="token" style="background-color: black;">G</div>';
+var jstpl_guard_token = '<div id="guard_token_${token_id}" class="token guard token_guard_wrapper2"></div>';
 
 var jstpl_generic_token = '<div id="generic_token_${token_id}" class="token ${token_type}" style="background-image: url(${token_background}); background-position: -4px ${token_bg_pos}px;"></div>';
 
@@ -213,6 +214,10 @@ var jstpl_draw_tools_dialog = '<div id="draw_tools_dialog" class="dialog">\n' +
 '</div>';
 
 var jstpl_die = '<div class="icon_die icon_die_${die_value}" id="${die_id}"></div>';
+
+var jstpl_path_line = '<line id="path_preview_floor${floor}_position${position}" class="path_in" x1=${x1} y1=${y1} x2=${x2} y2=${y2} />';
+var jstpl_path_circle = '<circle id="guard_preview_floor${floor}" cx=${cx} cy=${cy} />';
+// var jstpl_path_circle = '<circle cx=${cx} cy=${cy}><animate attributeName="x2" attributeType="XML" from="10" to="90" dur="4s" repeatCount="indefinite"/></circle>';
 </script>  
 
 {OVERALL_GAME_FOOTER}

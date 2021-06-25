@@ -305,11 +305,15 @@ class burglebros extends Table
         $result['crack_tokens'] = $safe_tokens;
 
         $patrol_tokens = $this->tokens->getCardsOfType('patrol');
+        $guard_paths = [];
+        $tiles = self::getCollectionFromDB("SELECT card_id id, card_location_arg location_arg FROM tile");
         foreach ($patrol_tokens as $id => &$value) {
             $floor = $value['type_arg'];
             $value['die_num'] = self::getGameStateValue("patrolDieCount$floor");
+            $guard_paths["floor$floor"] = $value['location'] == 'deck' ? null : $this->getPathByLocation($floor, $tiles);
         }
         $result['patrol_tokens'] = $patrol_tokens;
+        $result['guard_paths'] = $guard_paths;
   
         return $result;
     }
@@ -591,6 +595,8 @@ SQL;
                     'cards' => $this->cards->getCardsInLocation($patrol.'_discard'),
                     'top' => $patrol_entrance
                 ));
+                // var_dump($this->getPathByLocation($floor, null));
+                // die("stop");
                 $tile_id = $this->findTileOnFloor($floor, $patrol_entrance['type_arg'] - 1)['id'];
             } while($tile_id == $guard_token['location_arg']);
         }
@@ -824,9 +830,15 @@ SQL;
     }
 
     function performGuardMovementEffects($guard_token, $tile_id) {
-        $this->moveToken($guard_token['id'], 'tile', $tile_id, TRUE);
-        $this->checkCameras(array('guard_id'=>$guard_token['id']));
         $tile = $this->tiles->getCard($tile_id);
+        $floor = $tile['location'][5];
+        $this->moveToken($guard_token['id'], 'tile', $tile_id, TRUE);
+        self::notifyAllPlayers('updateGuardPath', '', array(
+            'floor' => $floor,
+            'path' => $this->getPathByLocation($floor, null),
+            'position' => $tile['location_arg']
+        ));
+        $this->checkCameras(array('guard_id'=>$guard_token['id']));
         $this->handleGuardSeesPlayerTile($tile);
         $this->clearTileTokens('alarm', $tile_id);
     }
@@ -846,7 +858,6 @@ SQL;
         }
 
         $path = $this->findShortestPathClockwise($floor, $guard_tile['location_arg'], $patrol_tile['location_arg']);
-        // var_dump($path);
         foreach ($path as $tile_id) {
             if ($tile_id != $guard_token['location_arg']) {
                 $movement--;
@@ -1058,6 +1069,31 @@ SQL;
             // }
             // var_dump(array('os'=>$open_set,'fs'=>$f_score,'gs'=>$g_score,'cf'=>$came_from));
         }
+    }
+
+    function getPathByLocation($floor, $tiles = null) {
+        // Return a path as an array of location_arg positions of tiles (top left is 0, bottom right is 15)
+        $tiles = $tiles ? $tiles : self::getCollectionFromDB("SELECT card_id id, card_location_arg location_arg FROM tile");
+        $path = $this->getGuardPath($floor);
+        if ($path) {
+            $path = array_map( function($tile_id) use($tiles) {
+                return $tiles[$tile_id]['location_arg'];
+            }, $path);
+        }
+        return $path;
+    }
+
+
+    function getGuardPath($floor) {
+        $guard_token = array_values($this->tokens->getCardsOfType('guard', $floor))[0];
+        $guard_tile = $this->tiles->getCard($guard_token['location_arg']);
+        $patrol_token = array_values($this->tokens->getCardsOfType('patrol', $floor))[0];
+        if ($patrol_token['location'] == 'deck') {
+            $patrol_tile = $guard_tile;
+        } else {
+            $patrol_tile = $this->tiles->getCard($patrol_token['location_arg']);
+        }
+        return $this->findShortestPathClockwise($floor, $guard_tile['location_arg'], $patrol_tile['location_arg']);
     }
 
     function directions($left, $right) {
@@ -1388,6 +1424,15 @@ SQL;
 
     function moveToken($id, $location, $location_arg=0, $synchronous=FALSE) {
         $this->moveTokens(array($id), $location, $location_arg, $synchronous);
+        $token = $this->tokens->getCard($id);
+        if ($token['type'] == 'patrol') {
+            $tile = $this->tiles->getCard($token['location_arg']);
+            $floor = $tile['location'][5];
+            self::notifyAllPlayers('createGuardPath', '', array(
+                'floor' => $floor,
+                'path' => $this->getPathByLocation($floor, null)
+            ));
+        }
     }
 
     function pickTokens($type, $to_location='tile', $to_location_arg=null, $nbr = 1) {

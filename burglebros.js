@@ -33,6 +33,10 @@ function (dojo, declare) {
             this.cardwidth = 120;
             this.cardheight = 120;
             this.nonGenericTokenTypes = ['player', 'guard', 'patrol', 'crack'];
+            // Guard SVG path
+            this.path_x_offset = 17;
+            this.path_y_offset = 17;
+            this.path_tile_offset = 29;
         },
         
         /*
@@ -121,6 +125,9 @@ function (dojo, declare) {
                 var patrolTopKey = patrolKey + '_discard_top';
                 this.loadPatrolDiscard(floor, gamedatas[patrolTopKey]);
                 dojo.connect( $('floor' + floor.toString() + '_preview'), 'onclick', dojo.hitch(this, 'showFloor', floor));
+
+                // Guard path
+                this.createGuardPath(floor, gamedatas.guard_paths['floor' + floor]);
             }
 
             for (var wallIdx = 0; wallIdx < gamedatas.walls.length; wallIdx++) {
@@ -481,7 +488,7 @@ function (dojo, declare) {
                 tile_type : tile.type,
                 preview_row: preview_row,
                 preview_col: preview_col
-            }), 'floor' + floor.toString() + '_preview');
+            }), 'floor' + floor.toString() + '_preview', 'first');
 
             if (tile.type != 'back') {                
                 var tooltipHtml = this.format_block('jstpl_tile_tooltip', {
@@ -638,6 +645,64 @@ function (dojo, declare) {
             zone.create( this, zoneId, 24, 24 );
             zone.setPattern( 'grid' );
             this.zones[zoneId] = zone;
+        },
+
+        createGuardPath: function(floor, guard_path) {
+            console.log('guard_path', guard_path);
+            if (guard_path === null)
+                return false;
+            // Create a SVG path preview on the floor preview zone
+            var HTML_path = '';
+            // Create path
+            for (var i = guard_path.length - 1; i >= 1; i--) {
+                var previous_pos = guard_path[i-1];
+                var x1 = this.path_x_offset + this.path_tile_offset * this.calcSvgPosX(previous_pos);
+                var y1 = this.path_y_offset + this.path_tile_offset * this.calcSvgPosY(previous_pos);
+                var current_pos = guard_path[i];
+                var x2 = this.path_x_offset + this.path_tile_offset * this.calcSvgPosX(current_pos);
+                var y2 = this.path_y_offset + this.path_tile_offset * this.calcSvgPosY(current_pos);
+                HTML_path += this.format_block('jstpl_path_line', {
+                    x1: x1,
+                    y1: y1,
+                    x2: x2,
+                    y2: y2,
+                    floor: floor,
+                    position: current_pos
+                });
+            }
+            // Append guard position (circle)
+            // console.log("guard path", pos, x, y);
+            HTML_path += this.createGuardPreviewHTML(floor, guard_path);
+            // Wrap with svg tag
+            HTML_path = '<svg id="floor' + floor + '_svg_path">' + HTML_path + '</svg>';
+            dojo.destroy($('floor' + floor + '_svg_path'));
+            dojo.place( HTML_path, 'floor' + floor + '_path_preview');
+        },
+
+        updateGuardPath: function(floor, guard_path, position) {
+            // Update guard position
+            var cx = this.path_x_offset + this.path_tile_offset * this.calcSvgPosX(guard_path[0]);
+            var cy = this.path_y_offset + this.path_tile_offset * this.calcSvgPosY(guard_path[0]);
+            dojo.style('guard_preview_floor' + floor, 'cx', cx);
+            dojo.style('guard_preview_floor' + floor, 'cy', cy);
+            // Delete current path
+            this.fadeOutAndDestroy('path_preview_floor'+floor+'_position'+position);
+        },
+        createGuardPreviewHTML: function(floor, guard_path) {
+            var x = this.calcSvgPosX(guard_path[0]);
+            var y = this.calcSvgPosY(guard_path[0]);
+            // console.log("guard path", pos, x, y);
+            return this.format_block('jstpl_path_circle', {
+                cx: this.path_x_offset + this.path_tile_offset * x,
+                cy: this.path_y_offset + this.path_tile_offset * y,
+                floor: floor,
+            });
+        },
+        calcSvgPosX: function(position) {
+            return (position + 1) % 4 == 0 ? 4 : position % 4;
+        },
+        calcSvgPosY: function(position) {
+            return Math.floor(position / 4);
         },
 
         addCharacterAction: function() {
@@ -1480,6 +1545,8 @@ function (dojo, declare) {
             this.notifqueue.setSynchronous( 'tokensPickedSync', 750 );
             dojo.subscribe('tileFlipped', this, 'notif_tileFlipped');
             dojo.subscribe('nextPatrol', this, 'notif_nextPatrol');
+            dojo.subscribe('createGuardPath', this, 'notif_createGuardPath');
+            dojo.subscribe('updateGuardPath', this, 'notif_updateGuardPath');
             dojo.subscribe('playerHand', this, 'notif_playerHand');
             dojo.subscribe('eventCard', this, 'notif_eventCard');
             dojo.subscribe('safeDieIncreased', this, 'notif_safeDieIncreased');
@@ -1534,19 +1601,37 @@ function (dojo, declare) {
                 floor = tile.location[5];
                 deck = 'floor' + floor;
             this.gamedatas[deck][tile.location_arg] = tile;
+            console.log("notif tile flipped, floor", floor);
             this.showFloor(floor);
             this.playTileOnTable(floor, tile);
         },
 
         notif_nextPatrol: function(notif) {
             var deck = 'patrol' + notif.args.floor + '_discard';
+            var floor = notif.args.floor;
             this.gamedatas[deck] = notif.args.cards;
             this.gamedatas[deck + '_top'] = notif.args.top;
-            this.showFloor(notif.args.floor);
-            this.loadPatrolDiscard(notif.args.floor, notif.args.top);
+            console.log('notif next patrol', notif.args);
+            this.showFloor(floor);
+            this.loadPatrolDiscard(floor, notif.args.top);
         },
 
+        notif_createGuardPath: function(notif) {
+            console.log('notif_createGuardPath', notif.args);
+            var floor = notif.args.floor;
+            this.gamedatas.guard_paths['floor' + floor] = notif.args.path;
+            this.createGuardPath(floor, this.gamedatas.guard_paths['floor' + floor]);
+        },
+
+        notif_updateGuardPath: function(notif) {
+            console.log('notif_updateGuardPath', notif.args);
+            var floor = notif.args.floor;
+            this.gamedatas.guard_paths['floor' + floor] = notif.args.path;
+            this.updateGuardPath(floor, this.gamedatas.guard_paths['floor' + floor], notif.args.position);
+        },
+        
         notif_playerHand: function(notif) {
+            console.log('notif_playerHand', notif.args);
             var hand = notif.args.hand;
             var playerId = notif.args.player_id;
             this.gamedatas.players[playerId].hand = hand;
